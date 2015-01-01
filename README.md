@@ -1,1 +1,1 @@
-Perl interface to italian dictionary Vocabolario Treccani.
+Perl script to italian dictionary Vocabolario Treccani.
