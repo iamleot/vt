@@ -1,0 +1,33 @@
+#!/usr/pkg/bin/perl
+
+use common::sense;
+use HTML::FormatText;
+use HTML::TreeBuilder;
+
+
+#
+# Print usage information and exit.
+#
+sub
+usage()
+{
+
+	die "usage: $0 term\n";
+}
+
+
+my ($t, $term, $url);
+
+
+if (@ARGV != 1) {
+	usage();
+}
+
+$term = shift @ARGV;
+$url = "http://www.treccani.it/vocabolario/${term}/?stampa=1";
+
+# Only <div class="lemma"> sub-tree is the interesting part.
+$t = HTML::TreeBuilder->new_from_url($url);
+$t = $t->look_down("_tag", "div", "class", "lemma");
+$t->look_down("_tag", "div", "class", "intro")->delete();
+print $t->format(HTML::FormatText->new(lm => 0, rm => 80));
