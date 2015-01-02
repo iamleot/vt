@@ -73,4 +73,5 @@ $term = shift @ARGV;
 
 for my $t (fetch_term($term)) {
 	print_term($t);
+	print "\n";
 }
