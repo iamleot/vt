@@ -1,6 +1,7 @@
 #!/usr/pkg/bin/perl
 
 use common::sense;
+use LWP::UserAgent;
 use HTML::FormatText;
 use HTML::TreeBuilder;
 
@@ -15,8 +16,53 @@ usage()
 	die "usage: $0 term\n";
 }
 
+#
+# Fetch all available terms given a word and return them via an array.
+#
+sub
+fetch_term($)
+{
+	my ($term) = shift(@_);
+	my ($r, @terms, $ua, $url);
 
-my ($t, $term, $url);
+	$url = "http://www.treccani.it/vocabolario/";
+
+	$ua = LWP::UserAgent->new();
+
+	# Try to fetch just the term. If it is not possible fetch the term
+	# appended with a number (for terms that has got multiple meanings).
+	if ($r = $ua->get($url . $term . "/?stampa=1") and $r->is_success()) {
+		push @terms, $r->decoded_content();
+	} else {
+		my $i = 1;
+
+		while ($r = $ua->get($url . $term . $i . "/?stampa=1")
+		    and $r->is_success()) {
+			push @terms, $r->decoded_content();
+			$i++;
+		}
+	}
+
+	return @terms;
+}
+
+#
+# Given a reference to a content print the formatted term.
+#
+sub
+print_term($)
+{
+	my ($c) = shift(@_);
+	my $ht;
+
+	# Only <div class="lemma"> sub-tree is the interesting part.
+	$ht = HTML::TreeBuilder->new_from_content($c);
+	$ht = $ht->look_down("_tag", "div", "class", "lemma");
+	$ht->look_down("_tag", "div", "class", "intro")->delete();
+	print $ht->format(HTML::FormatText->new(lm => 0, rm => 80));
+}
+
+my ($term);
 
 
 if (@ARGV != 1) {
@@ -24,10 +70,7 @@ if (@ARGV != 1) {
 }
 
 $term = shift @ARGV;
-$url = "http://www.treccani.it/vocabolario/${term}/?stampa=1";
 
-# Only <div class="lemma"> sub-tree is the interesting part.
-$t = HTML::TreeBuilder->new_from_url($url);
-$t = $t->look_down("_tag", "div", "class", "lemma");
-$t->look_down("_tag", "div", "class", "intro")->delete();
-print $t->format(HTML::FormatText->new(lm => 0, rm => 80));
+for my $t (fetch_term($term)) {
+	print_term($t);
+}
