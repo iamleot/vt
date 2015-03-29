@@ -1,9 +1,12 @@
 #!/usr/pkg/bin/perl
 
-use common::sense;
+use strict;
+use warnings;
 use LWP::UserAgent;
 use HTML::FormatText;
 use HTML::TreeBuilder;
+
+binmode(STDOUT, ":utf8");
 
 
 #
@@ -22,7 +25,7 @@ usage()
 sub
 fetch_term($)
 {
-	my ($term) = shift(@_);
+	my $term = shift;
 	my ($r, @terms, $ua, $url);
 
 	$url = "http://www.treccani.it/vocabolario/";
@@ -52,7 +55,7 @@ fetch_term($)
 sub
 print_term($)
 {
-	my ($c) = shift(@_);
+	my $c = shift;
 	my $ht;
 
 	# Only <div class="lemma"> sub-tree is the interesting part.
@@ -62,9 +65,8 @@ print_term($)
 	print $ht->format(HTML::FormatText->new(lm => 0, rm => 80));
 }
 
+
 my ($term);
-
-
 if (@ARGV != 1) {
 	usage();
 }
