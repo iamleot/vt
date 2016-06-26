@@ -20,6 +20,20 @@ usage()
 }
 
 #
+# Return true if a term has results or not.
+#
+sub
+term_has_results($)
+{
+	my $c = shift;
+	my $ht;
+
+	$ht = HTML::TreeBuilder->new_from_content($c);
+
+	return ($ht->look_down("_tag", "div", "class", "no-results")) ? 0 : 1;
+}
+
+#
 # Fetch all available terms given a word and return them via an array.
 #
 sub
@@ -34,13 +48,15 @@ fetch_term($)
 
 	# Try to fetch just the term. If it is not possible fetch the term
 	# appended with a number (for terms that has got multiple meanings).
-	if ($r = $ua->get($url . $term . "/?stampa=1") and $r->is_success()) {
+	if ($r = $ua->get($url . $term . "/?stampa=1") and $r->is_success()
+	    and term_has_results($r->decoded_content)) {
 		push @terms, $r->decoded_content();
 	} else {
 		my $i = 1;
 
 		while ($r = $ua->get($url . $term . $i . "/?stampa=1")
-		    and $r->is_success()) {
+		    and $r->is_success()
+		    and term_has_results($r->decoded_content)) {
 			push @terms, $r->decoded_content();
 			$i++;
 		}
@@ -58,10 +74,9 @@ print_term($)
 	my $c = shift;
 	my $ht;
 
-	# Only <div class="lemma"> sub-tree is the interesting part.
+	# Only <div class="text spiega"> sub-tree is the interesting part.
 	$ht = HTML::TreeBuilder->new_from_content($c);
-	$ht = $ht->look_down("_tag", "div", "class", "lemma");
-	$ht->look_down("_tag", "div", "class", "intro")->delete();
+	$ht = $ht->look_down("_tag", "div", "class", "text spiega");
 	print $ht->format(HTML::FormatText->new(lm => 0, rm => 80));
 }
 
